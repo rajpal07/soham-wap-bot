@@ -276,6 +276,42 @@ async function sendTestMessage(rl) {
 }
 
 // ==========================================
+// HEALTH CHECK SERVER (keeps Render free tier alive)
+// ==========================================
+const http = require('http');
+const PORT = process.env.PORT || 10000;
+
+const server = http.createServer((req, res) => {
+  const stats = getStats();
+  const gStats = getGuardrailStats();
+  
+  if (req.url === '/health' || req.url === '/') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      status: 'running',
+      whatsapp: getStatus(),
+      customers: customers.length,
+      queue: stats,
+      guardrails: gStats,
+      uptime: Math.floor(process.uptime()) + 's',
+    }));
+  } else {
+    res.writeHead(404);
+    res.end('Not found');
+  }
+});
+
+server.listen(PORT, () => {
+  console.log(`🌐 Health check server running on port ${PORT}`);
+});
+
+// Self-ping every 14 minutes to prevent Render free tier from sleeping
+setInterval(() => {
+  const url = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
+  http.get(`${url}/health`, () => {}).on('error', () => {});
+}, 14 * 60 * 1000);
+
+// ==========================================
 // START THE BOT
 // ==========================================
 main().catch(error => {
