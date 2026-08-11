@@ -182,43 +182,17 @@ Is customer ke liye ek personalized WhatsApp message likh. Yaad rakh - chhota, f
     // Clean up
     messageText = messageText.replace(/^"|"$/g, '').replace(/^'|'$/g, '').trim();
 
-    // Return Interactive List object for Baileys native menu popup!
-    return {
-      type: 'list',
-      text: messageText,
-      title: BUSINESS_NAME,
-      buttonText: 'View Services Menu 📋',
-      sections: [
-        {
-          title: 'Our Home Services & Parts',
-          rows: [
-            { id: 'option_repair', title: 'Doorstep Repair & Service 🛠️', description: 'AC, Fridge, TV, Washing Machine, Oven' },
-            { id: 'option_cables', title: 'Remotes & Cables Delivery 🔌', description: 'TV Remotes, HDMI, Ethernet & Wires' },
-            { id: 'option_offers', title: 'Naye Offers & Enquiries 🎁', description: 'Special discounts & product help' }
-          ]
-        }
-      ]
-    };
+    // Make sure menu options are attached cleanly
+    if (!messageText.includes('1️⃣') && !messageText.includes('Reply 1')) {
+      messageText += `\n\nReply 1, 2 ya 3 karo:\n1️⃣ Doorstep Repair / Service 🛠️\n2️⃣ Remotes & Cable Delivery 🔌\n3️⃣ Naye Offers & Help 🎁`;
+    }
+
+    return messageText;
   } catch (error) {
     if (error.message.startsWith('🛑 GUARDRAIL')) throw error; // Re-throw guardrail errors
     console.error('❌ Groq campaign message error:', error.message);
-    // Fallback interactive message
-    return {
-      type: 'list',
-      text: `Namaste ${customer.name.split(' ')[0]} ji! ${BUSINESS_NAME} se bol rahe hain. Humne naye home repair services aur remote/cable doorstep delivery start kiye hain!`,
-      title: BUSINESS_NAME,
-      buttonText: 'View Services Menu 📋',
-      sections: [
-        {
-          title: 'Services',
-          rows: [
-            { id: 'option_repair', title: 'Doorstep Repair / Service 🛠️', description: 'AC, Fridge, TV, Washing Machine, Oven' },
-            { id: 'option_cables', title: 'Remotes & Cables Delivery 🔌', description: 'TV Remotes, HDMI, Ethernet & Wires' },
-            { id: 'option_offers', title: 'Naye Offers & Help 🎁', description: 'Special discounts & advice' }
-          ]
-        }
-      ]
-    };
+    // Fallback message
+    return `Namaste ${customer.name.split(' ')[0]} ji! ${BUSINESS_NAME} se bol rahe hain. Humne naye home repair services (AC, TV, Fridge, Oven) aur remote/cable doorstep delivery start kiye hain!\n\nReply 1, 2 ya 3 karo:\n1️⃣ Doorstep Repair / Service 🛠️\n2️⃣ Remotes & Cable Delivery 🔌\n3️⃣ Naye Offers & Help 🎁`;
   }
 }
 

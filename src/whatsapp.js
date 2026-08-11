@@ -161,13 +161,7 @@ async function sendMessage(jid, content) {
     const typingDuration = Math.min(Math.max(textStr.length * 50, 2000), 6000);
     await delay(typingDuration);
     
-    if (typeof content === 'object' && content.type === 'list') {
-      await sendInteractiveList(jid, content.text, content.title || BIZ_NAME, content.buttonText || 'View Options 📋', content.sections);
-    } else if (typeof content === 'object' && content.type === 'buttons') {
-      await sendQuickReplyButtons(jid, content.text, content.buttons, content.footer);
-    } else {
-      await sock.sendMessage(jid, { text: textStr });
-    }
+    await sock.sendMessage(jid, { text: textStr });
     
     await sock.sendPresenceUpdate('paused', jid);
     console.log(`✅ Message sent to ${jid}`);
