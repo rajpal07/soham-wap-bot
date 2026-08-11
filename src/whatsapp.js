@@ -1,4 +1,4 @@
-const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, delay, fetchLatestBaileysVersion } = require('@whiskeysockets/baileys');
+const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, delay, fetchLatestBaileysVersion, Browsers } = require('@whiskeysockets/baileys');
 const qrcode = require('qrcode-terminal');
 const pino = require('pino');
 const path = require('path');
@@ -34,8 +34,8 @@ async function connectWhatsApp(messageHandler) {
     version,
     auth: state,
     logger,
-    printQRInTerminal: false, // We'll handle QR display ourselves
-    browser: ['Soham Bot', 'Chrome', '120.0.0'],
+    printQRInTerminal: false,
+    browser: Browsers.macOS('Desktop'), // Official Chrome on macOS signature (fixes "Can't link new devices" error)
     connectTimeoutMs: 60000,
     defaultQueryTimeoutMs: 0,
     keepAliveIntervalMs: 30000,
