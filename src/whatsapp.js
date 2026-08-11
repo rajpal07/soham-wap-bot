@@ -202,7 +202,7 @@ async function sendMessage(jid, content) {
   
   try {
     const textStr = typeof content === 'string' ? content : (content.text || '');
-    const menuMode = process.env.MENU_MODE || 'text';
+    const menuMode = process.env.MENU_MODE || 'poll';
     
     // Simulate typing (makes it look natural)
     await sock.presenceSubscribe(jid);
@@ -212,7 +212,7 @@ async function sendMessage(jid, content) {
     const typingDuration = Math.min(Math.max(textStr.length * 50, 1500), 4000);
     await delay(typingDuration);
     
-    if (menuMode === 'poll') {
+    if (menuMode === 'poll' || menuMode === 'interactive_poll') {
       console.log('📊 Sending Native WhatsApp Interactive Poll Menu...');
       await sendNativePoll(jid, textStr);
     } else if (menuMode === 'list') {
@@ -222,7 +222,6 @@ async function sendMessage(jid, content) {
       console.log('🔘 Sending Quick Reply Buttons Message...');
       await sendNativeButtons(jid, textStr);
     } else {
-      // Standard Text Delivery (100% reliable, zero E2EE waiting time)
       await sock.sendMessage(jid, { text: textStr });
     }
     
@@ -246,6 +245,7 @@ const BIZ_NAME = process.env.BUSINESS_NAME || 'Diwan Electronics';
  * 0. Native WhatsApp Interactive Poll Menu (Works 100% natively on all WhatsApp clients)
  */
 async function sendNativePoll(jid, bodyText) {
+  const crypto = require('crypto');
   const cleanBody = bodyText.replace(/Reply 1, 2 ya 3 karo[\s\S]*/gi, '').trim();
   
   // Check if target is self (messaging your own logged-in number)
@@ -254,27 +254,31 @@ async function sendNativePoll(jid, bodyText) {
   const isSelf = selfNumber && targetNumber.includes(selfNumber);
 
   if (isSelf) {
-    // Self-chat: send formatted text menu (WhatsApp blocks self-sent native poll key exchanges)
+    // Self-chat: send formatted text menu
     const fullText = cleanBody + `\n\nReply 1, 2 ya 3 karo:\n1️⃣ Doorstep Repair / Service 🛠️\n2️⃣ Remotes & Cables Delivery 🔌\n3️⃣ Naye Offers & Help 🎁`;
     await sock.sendMessage(jid, { text: fullText });
   } else {
-    // Sending to another customer: send personalized text first to establish Signal E2EE key exchange
+    // 1. Send personalized text greeting first
     await sock.sendMessage(jid, { text: cleanBody });
     
-    // Give recipient phone 2.5 seconds to complete Signal E2EE handshake before sending poll
-    await delay(2500);
+    await delay(1500);
     
-    await sock.sendMessage(jid, {
-      poll: {
-        name: 'Aapko kis service ki jankari chahiye? (Tap an option below 👇)',
-        values: [
-          '1️⃣ Doorstep Repair / Service 🛠️',
-          '2️⃣ Remotes & Cables Delivery 🔌',
-          '3️⃣ Naye Offers & Help 🎁'
-        ],
-        selectableCount: 1
-      }
-    });
+    // 2. Send Native WhatsApp Interactive Poll with explicit crypto messageSecret
+    await sock.sendMessage(
+      jid,
+      {
+        poll: {
+          name: 'Aapko kis service ki jankari chahiye? (Tap an option below 👇)',
+          values: [
+            '1️⃣ Doorstep Repair / Service 🛠️',
+            '2️⃣ Remotes & Cables Delivery 🔌',
+            '3️⃣ Naye Offers & Help 🎁'
+          ],
+          selectableCount: 1
+        }
+      },
+      { messageSecret: crypto.randomBytes(32) }
+    );
   }
 }
 
