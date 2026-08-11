@@ -9,7 +9,7 @@ services:
       - key: GROQ_API_KEY
         sync: false
       - key: BUSINESS_NAME
-        value: Soham Electronics
+        value: Diwan Electronics
       - key: EXCEL_FILE_PATH
         value: Sale_Report_01-07-2025_to_31-07-2026.xls
       - key: MIN_DELAY_SEC

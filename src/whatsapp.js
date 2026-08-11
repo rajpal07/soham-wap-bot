@@ -162,7 +162,7 @@ async function sendMessage(jid, content) {
     await delay(typingDuration);
     
     if (typeof content === 'object' && content.type === 'list') {
-      await sendInteractiveList(jid, content.text, content.title || 'Soham Electronics', content.buttonText || 'View Options 📋', content.sections);
+      await sendInteractiveList(jid, content.text, content.title || BIZ_NAME, content.buttonText || 'View Options 📋', content.sections);
     } else if (typeof content === 'object' && content.type === 'buttons') {
       await sendQuickReplyButtons(jid, content.text, content.buttons, content.footer);
     } else {
@@ -178,6 +178,8 @@ async function sendMessage(jid, content) {
   }
 }
 
+const BIZ_NAME = process.env.BUSINESS_NAME || 'Diwan Electronics';
+
 /**
  * Send a WhatsApp Native Interactive List Menu (slide-up menu)
  */
@@ -192,10 +194,10 @@ async function sendInteractiveList(jid, bodyText, title, buttonText, sections) {
             text: bodyText
           }),
           footer: proto.Message.InteractiveMessage.Footer.create({
-            text: 'Soham Electronics • Tap below for services'
+            text: `${BIZ_NAME} • Tap below for services`
           }),
           header: proto.Message.InteractiveMessage.Header.create({
-            title: title || 'Soham Electronics',
+            title: title || BIZ_NAME,
             hasMediaAttachment: false
           }),
           nativeFlowMessage: proto.Message.InteractiveMessage.NativeFlowMessage.create({
@@ -246,7 +248,7 @@ async function sendQuickReplyButtons(jid, bodyText, buttons, footerText) {
       message: {
         interactiveMessage: proto.Message.InteractiveMessage.create({
           body: proto.Message.InteractiveMessage.Body.create({ text: bodyText }),
-          footer: proto.Message.InteractiveMessage.Footer.create({ text: footerText || 'Soham Electronics' }),
+          footer: proto.Message.InteractiveMessage.Footer.create({ text: footerText || BIZ_NAME }),
           nativeFlowMessage: proto.Message.InteractiveMessage.NativeFlowMessage.create({
             buttons: formattedButtons
           })

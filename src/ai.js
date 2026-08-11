@@ -3,7 +3,7 @@ const Groq = require('groq-sdk');
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-const BUSINESS_NAME = process.env.BUSINESS_NAME || 'Soham Electronics';
+const BUSINESS_NAME = process.env.BUSINESS_NAME || 'Diwan Electronics';
 
 // ==========================================
 // HARD GUARDRAILS - Rate Limiting & Safety
@@ -89,7 +89,7 @@ function getGuardrailStats() {
 // ==========================================
 
 // System prompt for generating outbound campaign messages
-const CAMPAIGN_SYSTEM_PROMPT = `Tu Soham Electronics ka experienced owner aur marketing expert hai. Tera kaam hai ek short, high-converting, friendly Hinglish WhatsApp message likhna jo customer engagement badhaye.
+const CAMPAIGN_SYSTEM_PROMPT = `Tu ${BUSINESS_NAME} ka experienced owner aur marketing expert hai. Tera kaam hai ek short, high-converting, friendly Hinglish WhatsApp message likhna jo customer engagement badhaye.
 
 CUSTOMER CONTEXT & NEW SERVICES TO HIGHLIGHT:
 1. Warm personal check-in on their past purchase (e.g., "Haier Fridge", "MIDEA AC", "Voltas Beko Washing Machine").
@@ -114,7 +114,7 @@ Reply 1, 2 ya 3 karo:
 EXAMPLE OF GREAT MESSAGE:
 "Namaste Vedanth bhai! Aapka MIDEA AC kaisa chal raha hai? 🙂
 
-Ek badhiya update tha — ab Soham Electronics se ghar baithe sab appliances (AC, Fridge, TV, Washing Machine, Oven) ki repair & service le sakte hain! Saath mein TV remotes, HDMI, Ethernet cable & wires ki home delivery bhi start ho gayi hai.
+Ek badhiya update tha — ab ${BUSINESS_NAME} se ghar baithe sab appliances (AC, Fridge, TV, Washing Machine, Oven) ki repair & service le sakte hain! Saath mein TV remotes, HDMI, Ethernet cable & wires ki home delivery bhi start ho gayi hai.
 
 Reply 1, 2 ya 3 karo:
 1️⃣ Doorstep Repair / Service 🛠️
@@ -122,7 +122,7 @@ Reply 1, 2 ya 3 karo:
 3️⃣ Naye Offers & Help 🎁"`;
 
 // System prompt for replying to incoming messages
-const REPLY_SYSTEM_PROMPT = `Tu Soham Electronics ka owner hai. Customer ne WhatsApp message ya option (1, 2, 3) bheja hai. Fast, friendly, aur helpful reply kar.
+const REPLY_SYSTEM_PROMPT = `Tu ${BUSINESS_NAME} ka owner hai. Customer ne WhatsApp message ya option (1, 2, 3) bheja hai. Fast, friendly, aur helpful reply kar.
 
 MENU OPTION HANDLING:
 - If user replies "1" or mentions repair/service/technician:
@@ -186,7 +186,7 @@ Is customer ke liye ek personalized WhatsApp message likh. Yaad rakh - chhota, f
     return {
       type: 'list',
       text: messageText,
-      title: 'Soham Electronics',
+      title: BUSINESS_NAME,
       buttonText: 'View Services Menu 📋',
       sections: [
         {
@@ -206,7 +206,7 @@ Is customer ke liye ek personalized WhatsApp message likh. Yaad rakh - chhota, f
     return {
       type: 'list',
       text: `Namaste ${customer.name.split(' ')[0]} ji! ${BUSINESS_NAME} se bol rahe hain. Humne naye home repair services aur remote/cable doorstep delivery start kiye hain!`,
-      title: 'Soham Electronics',
+      title: BUSINESS_NAME,
       buttonText: 'View Services Menu 📋',
       sections: [
         {

@@ -19,7 +19,7 @@ let customersByPhone = new Map(); // Quick lookup by WhatsApp JID
 // ==========================================
 async function main() {
   console.log('\n' + '='.repeat(60));
-  console.log('  🤖 SOHAM WHATSAPP BUSINESS BOT');
+  console.log('  🤖 DIWAN ELECTRONICS WHATSAPP BUSINESS BOT');
   console.log('  Personalized customer messaging with AI');
   console.log('='.repeat(60) + '\n');
   
