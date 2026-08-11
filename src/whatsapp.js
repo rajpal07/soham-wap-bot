@@ -108,15 +108,27 @@ async function connectWhatsApp(messageHandler) {
       if (msg.key.remoteJid?.endsWith('@g.us')) continue;
       
       const sender = msg.key.remoteJid;
-      const text = msg.message?.conversation 
+      // Extract text or button/list response
+      let text = msg.message?.conversation 
         || msg.message?.extendedTextMessage?.text 
+        || msg.message?.buttonsResponseMessage?.selectedButtonId
+        || msg.message?.listResponseMessage?.singleSelectReply?.selectedRowId
+        || msg.message?.templateButtonReplyMessage?.selectedId
         || msg.message?.imageMessage?.caption
         || msg.message?.videoMessage?.caption
         || '';
+        
+      // Extract native flow response if present
+      if (!text && msg.message?.interactiveResponseMessage) {
+        try {
+          const params = JSON.parse(msg.message.interactiveResponseMessage.nativeFlowResponseMessage?.paramsJson || '{}');
+          text = params.id || params.title || 'Selected Menu Option';
+        } catch (e) {}
+      }
       
       if (text && onMessageCallback) {
         const senderName = msg.pushName || 'Customer';
-        console.log(`\n📩 Incoming message from ${senderName} (${sender}): ${text}`);
+        console.log(`\n📩 Incoming message/selection from ${senderName} (${sender}): ${text}`);
         onMessageCallback(sender, text, senderName, msg);
       }
     }
@@ -126,40 +138,124 @@ async function connectWhatsApp(messageHandler) {
 }
 
 /**
- * Send a text message to a WhatsApp number
+ * Send a text or interactive menu message to a WhatsApp number
  * Includes typing simulation for natural feel
  * @param {string} jid - WhatsApp JID (91XXXXXXXXXX@s.whatsapp.net)
- * @param {string} text - Message text to send
+ * @param {string|Object} content - Message text or interactive config object
  * @returns {Promise<boolean>} Success status
  */
-async function sendMessage(jid, text) {
+async function sendMessage(jid, content) {
   if (!sock || connectionStatus !== 'connected') {
     console.log('❌ Cannot send message - not connected to WhatsApp');
     return false;
   }
   
   try {
+    const textStr = typeof content === 'string' ? content : (content.text || '');
+    
     // Simulate typing (makes it look natural)
     await sock.presenceSubscribe(jid);
     await delay(500);
     await sock.sendPresenceUpdate('composing', jid);
     
-    // Typing duration based on message length (roughly 50ms per character)
-    const typingDuration = Math.min(Math.max(text.length * 50, 2000), 8000);
+    const typingDuration = Math.min(Math.max(textStr.length * 50, 2000), 6000);
     await delay(typingDuration);
     
-    // Send the message
-    await sock.sendMessage(jid, { text });
+    if (typeof content === 'object' && content.type === 'list') {
+      await sendInteractiveList(jid, content.text, content.title || 'Soham Electronics', content.buttonText || 'View Options 📋', content.sections);
+    } else if (typeof content === 'object' && content.type === 'buttons') {
+      await sendQuickReplyButtons(jid, content.text, content.buttons, content.footer);
+    } else {
+      await sock.sendMessage(jid, { text: textStr });
+    }
     
-    // Stop typing indicator
     await sock.sendPresenceUpdate('paused', jid);
-    
     console.log(`✅ Message sent to ${jid}`);
     return true;
   } catch (error) {
     console.error(`❌ Failed to send message to ${jid}:`, error.message);
     return false;
   }
+}
+
+/**
+ * Send a WhatsApp Native Interactive List Menu (slide-up menu)
+ */
+async function sendInteractiveList(jid, bodyText, title, buttonText, sections) {
+  const { generateWAMessageFromContent, proto } = require('@whiskeysockets/baileys');
+  
+  const interactiveMsg = generateWAMessageFromContent(jid, {
+    viewOnceMessage: {
+      message: {
+        interactiveMessage: proto.Message.InteractiveMessage.create({
+          body: proto.Message.InteractiveMessage.Body.create({
+            text: bodyText
+          }),
+          footer: proto.Message.InteractiveMessage.Footer.create({
+            text: 'Soham Electronics • Tap below for services'
+          }),
+          header: proto.Message.InteractiveMessage.Header.create({
+            title: title || 'Soham Electronics',
+            hasMediaAttachment: false
+          }),
+          nativeFlowMessage: proto.Message.InteractiveMessage.NativeFlowMessage.create({
+            buttons: [
+              {
+                name: 'single_select',
+                buttonParamsJson: JSON.stringify({
+                  title: buttonText || 'Select Service 📋',
+                  sections: sections || [
+                    {
+                      title: 'Services & Support',
+                      rows: [
+                        { id: 'option_repair', title: 'Doorstep Repair / Service 🛠️', description: 'AC, Fridge, TV, Washing Machine, Oven' },
+                        { id: 'option_cables', title: 'Remotes & Cables Delivery 🔌', description: 'TV Remotes, HDMI, Ethernet & Wires' },
+                        { id: 'option_offers', title: 'Naye Offers & Enquiries 🎁', description: 'Special discounts & product help' }
+                      ]
+                    }
+                  ]
+                })
+              }
+            ]
+          })
+        })
+      }
+    }
+  }, { userJid: jid });
+
+  await sock.relayMessage(jid, interactiveMsg.message, { messageId: interactiveMsg.key.id });
+}
+
+/**
+ * Send Quick Reply Buttons (1-3 quick reply buttons below message)
+ */
+async function sendQuickReplyButtons(jid, bodyText, buttons, footerText) {
+  const { generateWAMessageFromContent, proto } = require('@whiskeysockets/baileys');
+  
+  const formattedButtons = (buttons || [
+    { display_text: 'Doorstep Repair 🛠️', id: 'option_repair' },
+    { display_text: 'Cable & Remotes 🔌', id: 'option_cables' },
+    { display_text: 'Naye Offers 🎁', id: 'option_offers' }
+  ]).map(b => ({
+    name: 'quick_reply',
+    buttonParamsJson: JSON.stringify({ display_text: b.display_text, id: b.id })
+  }));
+
+  const interactiveMsg = generateWAMessageFromContent(jid, {
+    viewOnceMessage: {
+      message: {
+        interactiveMessage: proto.Message.InteractiveMessage.create({
+          body: proto.Message.InteractiveMessage.Body.create({ text: bodyText }),
+          footer: proto.Message.InteractiveMessage.Footer.create({ text: footerText || 'Soham Electronics' }),
+          nativeFlowMessage: proto.Message.InteractiveMessage.NativeFlowMessage.create({
+            buttons: formattedButtons
+          })
+        })
+      }
+    }
+  }, { userJid: jid });
+
+  await sock.relayMessage(jid, interactiveMsg.message, { messageId: interactiveMsg.key.id });
 }
 
 /**

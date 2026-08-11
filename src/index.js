@@ -268,8 +268,9 @@ async function sendTestMessage(rl) {
       
       console.log(`\n🧠 Generating test message for ${customer.name}...`);
       const message = await generateCampaignMessage(customer, 'test message');
+      const previewText = typeof message === 'string' ? message : message.text;
       
-      console.log(`\n📤 Message preview:\n"${message}"\n`);
+      console.log(`\n📤 Message preview:\n"${previewText}"\n📋 Menu Option: ${typeof message === 'object' ? 'Native Interactive List Menu Attached' : 'Plain Text'}\n`);
       
       rl.question('Send this message? (y/n): ', async (confirm) => {
         if (confirm.toLowerCase() === 'y') {

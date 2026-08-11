@@ -80,8 +80,9 @@ async function startProcessing(sendFn) {
     
     const item = queue.shift();
     
+    const previewText = typeof item.message === 'string' ? item.message : (item.message?.text || 'Interactive Menu');
     console.log(`\n📤 Sending to: ${item.customerName}`);
-    console.log(`   Message: ${item.message.substring(0, 80)}...`);
+    console.log(`   Message: ${previewText.substring(0, 80)}...`);
     
     try {
       const success = await sendFn(item.jid, item.message);

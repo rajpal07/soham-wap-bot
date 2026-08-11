@@ -172,20 +172,53 @@ Is customer ke liye ek personalized WhatsApp message likh. Yaad rakh - chhota, f
       ],
       model: 'llama-3.3-70b-versatile',
       temperature: 0.85,
-      max_tokens: 200,
+      max_tokens: 250,
       top_p: 0.9,
     });
 
-    const message = completion.choices[0]?.message?.content;
-    if (!message) throw new Error('Empty response from Groq');
+    let messageText = completion.choices[0]?.message?.content || '';
+    if (!messageText) throw new Error('Empty response from Groq');
 
-    // Clean up - remove quotes if AI wraps the message in them
-    return message.replace(/^"|"$/g, '').replace(/^'|'$/g, '').trim();
+    // Clean up
+    messageText = messageText.replace(/^"|"$/g, '').replace(/^'|'$/g, '').trim();
+
+    // Return Interactive List object for Baileys native menu popup!
+    return {
+      type: 'list',
+      text: messageText,
+      title: 'Soham Electronics',
+      buttonText: 'View Services Menu 📋',
+      sections: [
+        {
+          title: 'Our Home Services & Parts',
+          rows: [
+            { id: 'option_repair', title: 'Doorstep Repair & Service 🛠️', description: 'AC, Fridge, TV, Washing Machine, Oven' },
+            { id: 'option_cables', title: 'Remotes & Cables Delivery 🔌', description: 'TV Remotes, HDMI, Ethernet & Wires' },
+            { id: 'option_offers', title: 'Naye Offers & Enquiries 🎁', description: 'Special discounts & product help' }
+          ]
+        }
+      ]
+    };
   } catch (error) {
     if (error.message.startsWith('🛑 GUARDRAIL')) throw error; // Re-throw guardrail errors
     console.error('❌ Groq campaign message error:', error.message);
-    // Fallback message
-    return `Namaste ${customer.name.split(' ')[0]} ji! Kaise hain aap? ${BUSINESS_NAME} se bol rahe hain. Koi help chahiye toh batana 🙂`;
+    // Fallback interactive message
+    return {
+      type: 'list',
+      text: `Namaste ${customer.name.split(' ')[0]} ji! ${BUSINESS_NAME} se bol rahe hain. Humne naye home repair services aur remote/cable doorstep delivery start kiye hain!`,
+      title: 'Soham Electronics',
+      buttonText: 'View Services Menu 📋',
+      sections: [
+        {
+          title: 'Services',
+          rows: [
+            { id: 'option_repair', title: 'Doorstep Repair / Service 🛠️', description: 'AC, Fridge, TV, Washing Machine, Oven' },
+            { id: 'option_cables', title: 'Remotes & Cables Delivery 🔌', description: 'TV Remotes, HDMI, Ethernet & Wires' },
+            { id: 'option_offers', title: 'Naye Offers & Help 🎁', description: 'Special discounts & advice' }
+          ]
+        }
+      ]
+    };
   }
 }
 
