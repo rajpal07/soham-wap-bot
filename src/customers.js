@@ -101,6 +101,38 @@ function parseCustomerData(filePath) {
 }
 
 /**
+ * Load test contacts from a JSON file (test_contacts.json)
+ * @param {string} filePath - Path to JSON file
+ * @returns {Array} Array of customer objects
+ */
+function loadTestContacts(filePath) {
+  const fs = require('fs');
+  if (!fs.existsSync(filePath)) {
+    return [];
+  }
+  try {
+    const raw = fs.readFileSync(filePath, 'utf8');
+    const data = JSON.parse(raw);
+    const customers = data.map(item => {
+      const phone = String(item.phone || '').replace(/\D/g, '').slice(-10);
+      return {
+        name: item.name || 'Test Contact',
+        phone,
+        whatsappId: `91${phone}@s.whatsapp.net`,
+        purchases: item.purchases || [],
+        totalSpent: item.totalSpent || 0,
+        totalBalance: item.totalBalance || 0
+      };
+    });
+    console.log(`✅ Loaded ${customers.length} test contacts from ${path.basename(filePath)}`);
+    return customers;
+  } catch (err) {
+    console.error(`❌ Error loading test contacts: ${err.message}`);
+    return [];
+  }
+}
+
+/**
  * Extract a human-readable product name from the description field
  * Descriptions look like: 'mno.lg led 32LB653BPLA\nsno.VZ320126623'
  * We want: 'LG LED TV'
@@ -180,6 +212,7 @@ ${purchases}`;
 
 module.exports = {
   parseCustomerData,
+  loadTestContacts,
   extractProductName,
   getCustomerSummary
 };

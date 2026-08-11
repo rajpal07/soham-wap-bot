@@ -1,0 +1,16 @@
+[
+  {
+    "name": "Test User 1",
+    "phone": "9876543210",
+    "purchases": [
+      {
+        "date": "15/07/2026",
+        "productName": "LED TV",
+        "amount": 15000,
+        "balance": 0
+      }
+    ],
+    "totalSpent": 15000,
+    "totalBalance": 0
+  }
+]

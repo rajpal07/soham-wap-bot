@@ -2,7 +2,7 @@ require('dotenv').config();
 const path = require('path');
 const readline = require('readline');
 const { connectWhatsApp, sendMessage, isConnected, getStatus } = require('./whatsapp');
-const { parseCustomerData, getCustomerSummary } = require('./customers');
+const { parseCustomerData, loadTestContacts, getCustomerSummary } = require('./customers');
 const { generateCampaignMessage, generateReply, detectLanguage, canSendMessage, getGuardrailStats } = require('./ai');
 const { addToQueue, startProcessing, pauseQueue, resumeQueue, stopQueue, clearQueue, getStats } = require('./queue');
 
@@ -24,23 +24,31 @@ async function main() {
   console.log('='.repeat(60) + '\n');
   
   // Step 1: Load customer data
-  console.log('📊 Loading customer data from Excel...');
+  const fs = require('fs');
+  const TEST_CONTACTS_PATH = path.resolve('test_contacts.json');
+  const useTest = process.env.USE_TEST_CONTACTS === 'true';
+
+  console.log('📊 Loading customer data...');
   try {
-    customers = parseCustomerData(EXCEL_PATH);
+    if (useTest && fs.existsSync(TEST_CONTACTS_PATH)) {
+      console.log('🧪 USE_TEST_CONTACTS=true: Loading test_contacts.json...');
+      customers = loadTestContacts(TEST_CONTACTS_PATH);
+    } else {
+      customers = parseCustomerData(EXCEL_PATH);
+    }
     
     // Build lookup map by WhatsApp JID
     customers.forEach(c => {
       customersByPhone.set(c.whatsappId, c);
     });
     
-    console.log(`\n📋 Top 5 customers by spending:`);
+    console.log(`\n📋 Loaded ${customers.length} customer(s):`);
     customers.slice(0, 5).forEach((c, i) => {
-      console.log(`   ${i+1}. ${c.name} - ₹${c.totalSpent} (${c.purchases.length} purchases)`);
+      console.log(`   ${i+1}. ${c.name} (${c.phone}) - ₹${c.totalSpent} (${c.purchases.length} purchases)`);
     });
     console.log('');
   } catch (error) {
     console.error('❌ Failed to load customer data:', error.message);
-    console.log('💡 Make sure the Excel file exists at:', EXCEL_PATH);
     process.exit(1);
   }
   
