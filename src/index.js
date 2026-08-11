@@ -30,10 +30,11 @@ async function main() {
 
   console.log('📊 Loading customer data...');
   try {
-    if (useTest && fs.existsSync(TEST_CONTACTS_PATH)) {
-      console.log('🧪 USE_TEST_CONTACTS=true: Loading test_contacts.json...');
+    if (fs.existsSync(TEST_CONTACTS_PATH) && process.env.USE_EXCEL !== 'true') {
+      console.log('🧪 TEST MODE STRICTLY ACTIVE: Loading 3 test contacts from test_contacts.json...');
       customers = loadTestContacts(TEST_CONTACTS_PATH);
     } else {
+      console.log('📊 PRODUCTION MODE ACTIVE: Loading Excel customer data...');
       customers = parseCustomerData(EXCEL_PATH);
     }
     
