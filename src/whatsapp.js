@@ -152,25 +152,25 @@ async function sendMessage(jid, content) {
   
   try {
     const textStr = typeof content === 'string' ? content : (content.text || '');
-    const menuMode = process.env.MENU_MODE || (typeof content === 'object' ? content.type : 'list');
+    const menuMode = process.env.MENU_MODE || 'poll';
     
     // Simulate typing (makes it look natural)
     await sock.presenceSubscribe(jid);
     await delay(500);
     await sock.sendPresenceUpdate('composing', jid);
     
-    const typingDuration = Math.min(Math.max(textStr.length * 50, 2000), 5000);
+    const typingDuration = Math.min(Math.max(textStr.length * 50, 1500), 4000);
     await delay(typingDuration);
     
-    if (menuMode === 'list' || menuMode === 'native_list') {
+    if (menuMode === 'poll' || menuMode === 'interactive_poll') {
+      console.log('📊 Sending Native WhatsApp Interactive Poll Menu...');
+      await sendNativePoll(jid, textStr);
+    } else if (menuMode === 'list') {
       console.log('📋 Sending Native List Message...');
       await sendNativeList(jid, textStr);
     } else if (menuMode === 'buttons') {
       console.log('🔘 Sending Quick Reply Buttons Message...');
       await sendNativeButtons(jid, textStr);
-    } else if (menuMode === 'flow') {
-      console.log('📲 Sending Modern Native Flow Interactive Message...');
-      await sendInteractiveFlow(jid, textStr);
     } else {
       await sock.sendMessage(jid, { text: textStr });
     }
@@ -180,7 +180,6 @@ async function sendMessage(jid, content) {
     return true;
   } catch (error) {
     console.error(`❌ Failed to send message to ${jid}:`, error.message);
-    // Fallback to standard text message if interactive message throws error
     try {
       await sock.sendMessage(jid, { text: typeof content === 'string' ? content : content.text });
       return true;
@@ -191,6 +190,30 @@ async function sendMessage(jid, content) {
 }
 
 const BIZ_NAME = process.env.BUSINESS_NAME || 'Diwan Electronics';
+
+/**
+ * 0. Native WhatsApp Interactive Poll Menu (Works 100% natively on all WhatsApp clients)
+ */
+async function sendNativePoll(jid, bodyText) {
+  const cleanBody = bodyText.replace(/Reply 1, 2 ya 3 karo[\s\S]*/gi, '').trim();
+  
+  // Send the personalized text greeting first
+  await sock.sendMessage(jid, { text: cleanBody });
+  await delay(1000);
+  
+  // Send the native interactive WhatsApp Poll menu right below it!
+  await sock.sendMessage(jid, {
+    poll: {
+      name: 'Aapko kis service ki jankari chahiye? (Tap an option below 👇)',
+      values: [
+        '1️⃣ Doorstep Repair / Service 🛠️',
+        '2️⃣ Remotes & Cables Delivery 🔌',
+        '3️⃣ Naye Offers & Help 🎁'
+      ],
+      selectableCount: 1
+    }
+  });
+}
 
 /**
  * 1. Native WhatsApp List Message (Clickable slide-up menu drawer)
