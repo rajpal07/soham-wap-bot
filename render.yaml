@@ -1,0 +1,22 @@
+services:
+  - type: worker
+    name: soham-wap-bot
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node src/index.js
+    envVars:
+      - key: GROQ_API_KEY
+        sync: false
+      - key: BUSINESS_NAME
+        value: Soham Electronics
+      - key: EXCEL_FILE_PATH
+        value: Sale_Report_01-07-2025_to_31-07-2026.xls
+      - key: MIN_DELAY_SEC
+        value: "45"
+      - key: MAX_DELAY_SEC
+        value: "120"
+      - key: MAX_MESSAGES_PER_SESSION
+        value: "30"
+      - key: SESSION_BREAK_MIN
+        value: "20"
