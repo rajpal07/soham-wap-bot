@@ -11,11 +11,25 @@ const logger = pino({ level: 'silent' });
 
 // Suppress internal libsignal encryption session debug output
 const origConsoleLog = console.log;
+const origConsoleError = console.error;
+const origStdoutWrite = process.stdout.write;
+
 console.log = function(...args) {
-  if (typeof args[0] === 'string' && args[0].startsWith('Closing session: SessionEntry')) {
-    return; // Suppress Signal session key rotation log
-  }
+  if (typeof args[0] === 'string' && (args[0].includes('Closing session') || args[0].includes('SessionEntry'))) return;
   origConsoleLog.apply(console, args);
+};
+
+console.error = function(...args) {
+  if (typeof args[0] === 'string' && (args[0].includes('Closing session') || args[0].includes('SessionEntry'))) return;
+  origConsoleError.apply(console, args);
+};
+
+process.stdout.write = function(chunk, encoding, callback) {
+  if (typeof chunk === 'string' && (chunk.includes('Closing session') || chunk.includes('SessionEntry'))) {
+    if (typeof callback === 'function') callback();
+    return true;
+  }
+  return origStdoutWrite.apply(process.stdout, arguments);
 };
 
 let sock = null;
