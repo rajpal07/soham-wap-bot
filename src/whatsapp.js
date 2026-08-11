@@ -9,6 +9,15 @@ const AUTH_DIR = path.join(__dirname, '..', 'auth_info');
 // Logger (silent in production to keep console clean)
 const logger = pino({ level: 'silent' });
 
+// Suppress internal libsignal encryption session debug output
+const origConsoleLog = console.log;
+console.log = function(...args) {
+  if (typeof args[0] === 'string' && args[0].startsWith('Closing session: SessionEntry')) {
+    return; // Suppress Signal session key rotation log
+  }
+  origConsoleLog.apply(console, args);
+};
+
 let sock = null;
 let connectionStatus = 'disconnected';
 let onMessageCallback = null;
