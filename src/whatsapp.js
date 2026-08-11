@@ -257,9 +257,12 @@ async function sendNativePoll(jid, bodyText) {
     const fullText = cleanBody + `\n\nReply 1, 2 ya 3 karo:\n1️⃣ Doorstep Repair / Service 🛠️\n2️⃣ Remotes & Cables Delivery 🔌\n3️⃣ Naye Offers & Help 🎁`;
     await sock.sendMessage(jid, { text: fullText });
   } else {
-    // Sending to another customer: send personalized text + Native Interactive WhatsApp Poll!
+    // Sending to another customer: send personalized text first to establish Signal E2EE key exchange
     await sock.sendMessage(jid, { text: cleanBody });
-    await delay(1000);
+    
+    // Give recipient phone 2.5 seconds to complete Signal E2EE handshake before sending poll
+    await delay(2500);
+    
     await sock.sendMessage(jid, {
       poll: {
         name: 'Aapko kis service ki jankari chahiye? (Tap an option below 👇)',
