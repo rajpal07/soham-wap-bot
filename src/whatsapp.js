@@ -152,61 +152,117 @@ async function sendMessage(jid, content) {
   
   try {
     const textStr = typeof content === 'string' ? content : (content.text || '');
+    const menuMode = process.env.MENU_MODE || (typeof content === 'object' ? content.type : 'list');
     
     // Simulate typing (makes it look natural)
     await sock.presenceSubscribe(jid);
     await delay(500);
     await sock.sendPresenceUpdate('composing', jid);
     
-    const typingDuration = Math.min(Math.max(textStr.length * 50, 2000), 6000);
+    const typingDuration = Math.min(Math.max(textStr.length * 50, 2000), 5000);
     await delay(typingDuration);
     
-    await sock.sendMessage(jid, { text: textStr });
+    if (menuMode === 'list' || menuMode === 'native_list') {
+      console.log('📋 Sending Native List Message...');
+      await sendNativeList(jid, textStr);
+    } else if (menuMode === 'buttons') {
+      console.log('🔘 Sending Quick Reply Buttons Message...');
+      await sendNativeButtons(jid, textStr);
+    } else if (menuMode === 'flow') {
+      console.log('📲 Sending Modern Native Flow Interactive Message...');
+      await sendInteractiveFlow(jid, textStr);
+    } else {
+      await sock.sendMessage(jid, { text: textStr });
+    }
     
     await sock.sendPresenceUpdate('paused', jid);
     console.log(`✅ Message sent to ${jid}`);
     return true;
   } catch (error) {
     console.error(`❌ Failed to send message to ${jid}:`, error.message);
-    return false;
+    // Fallback to standard text message if interactive message throws error
+    try {
+      await sock.sendMessage(jid, { text: typeof content === 'string' ? content : content.text });
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 }
 
 const BIZ_NAME = process.env.BUSINESS_NAME || 'Diwan Electronics';
 
 /**
- * Send a WhatsApp Native Interactive List Menu (slide-up menu)
+ * 1. Native WhatsApp List Message (Clickable slide-up menu drawer)
  */
-async function sendInteractiveList(jid, bodyText, title, buttonText, sections) {
+async function sendNativeList(jid, bodyText) {
+  const cleanBody = bodyText.replace(/Reply 1, 2 ya 3 karo[\s\S]*/gi, '').trim();
+  await sock.sendMessage(jid, {
+    text: cleanBody,
+    footer: BIZ_NAME,
+    title: BIZ_NAME,
+    buttonText: 'View Options 📋',
+    sections: [
+      {
+        title: 'Our Services & Support',
+        rows: [
+          { title: 'Doorstep Repair & Service 🛠️', rowId: '1', description: 'AC, Fridge, TV, Washing Machine, Oven' },
+          { title: 'Remotes & Cables Delivery 🔌', rowId: '2', description: 'TV Remotes, HDMI, Ethernet & Wires' },
+          { title: 'Naye Offers & Help 🎁', rowId: '3', description: 'Special discounts & product advice' }
+        ]
+      }
+    ]
+  });
+}
+
+/**
+ * 2. Native Quick Reply Buttons (1-3 quick action buttons below message)
+ */
+async function sendNativeButtons(jid, bodyText) {
+  const cleanBody = bodyText.replace(/Reply 1, 2 ya 3 karo[\s\S]*/gi, '').trim();
+  await sock.sendMessage(jid, {
+    text: cleanBody,
+    footer: BIZ_NAME,
+    buttons: [
+      { buttonId: '1', buttonText: { displayText: 'Doorstep Repair 🛠️' }, type: 1 },
+      { buttonId: '2', buttonText: { displayText: 'Cable & Remotes 🔌' }, type: 1 },
+      { buttonId: '3', buttonText: { displayText: 'Naye Offers 🎁' }, type: 1 }
+    ],
+    headerType: 1
+  });
+}
+
+/**
+ * 3. Modern Native Flow Interactive Message (Interactive protobuf with device context)
+ */
+async function sendInteractiveFlow(jid, bodyText) {
   const { generateWAMessageFromContent, proto } = require('@whiskeysockets/baileys');
+  const cleanBody = bodyText.replace(/Reply 1, 2 ya 3 karo[\s\S]*/gi, '').trim();
   
-  const interactiveMsg = generateWAMessageFromContent(jid, {
+  const msg = generateWAMessageFromContent(jid, {
     viewOnceMessage: {
       message: {
+        messageContextInfo: {
+          deviceListMetadata: {},
+          deviceListMetadataVersion: 2
+        },
         interactiveMessage: proto.Message.InteractiveMessage.create({
-          body: proto.Message.InteractiveMessage.Body.create({
-            text: bodyText
-          }),
-          footer: proto.Message.InteractiveMessage.Footer.create({
-            text: `${BIZ_NAME} • Tap below for services`
-          }),
-          header: proto.Message.InteractiveMessage.Header.create({
-            title: title || BIZ_NAME,
-            hasMediaAttachment: false
-          }),
+          body: proto.Message.InteractiveMessage.Body.create({ text: cleanBody }),
+          footer: proto.Message.InteractiveMessage.Footer.create({ text: BIZ_NAME }),
+          header: proto.Message.InteractiveMessage.Header.create({ title: BIZ_NAME, hasMediaAttachment: false }),
           nativeFlowMessage: proto.Message.InteractiveMessage.NativeFlowMessage.create({
             buttons: [
               {
                 name: 'single_select',
                 buttonParamsJson: JSON.stringify({
-                  title: buttonText || 'Select Service 📋',
-                  sections: sections || [
+                  title: 'Select Service 📋',
+                  sections: [
                     {
-                      title: 'Services & Support',
+                      title: 'Services',
                       rows: [
-                        { id: 'option_repair', title: 'Doorstep Repair / Service 🛠️', description: 'AC, Fridge, TV, Washing Machine, Oven' },
-                        { id: 'option_cables', title: 'Remotes & Cables Delivery 🔌', description: 'TV Remotes, HDMI, Ethernet & Wires' },
-                        { id: 'option_offers', title: 'Naye Offers & Enquiries 🎁', description: 'Special discounts & product help' }
+                        { id: '1', title: 'Doorstep Repair / Service 🛠️', description: 'AC, Fridge, TV, Washing Machine, Oven' },
+                        { id: '2', title: 'Remotes & Cable Delivery 🔌', description: 'TV Remotes, HDMI, Ethernet & Wires' },
+                        { id: '3', title: 'Naye Offers & Help 🎁', description: 'Special discounts & advice' }
                       ]
                     }
                   ]
@@ -219,39 +275,7 @@ async function sendInteractiveList(jid, bodyText, title, buttonText, sections) {
     }
   }, { userJid: jid });
 
-  await sock.relayMessage(jid, interactiveMsg.message, { messageId: interactiveMsg.key.id });
-}
-
-/**
- * Send Quick Reply Buttons (1-3 quick reply buttons below message)
- */
-async function sendQuickReplyButtons(jid, bodyText, buttons, footerText) {
-  const { generateWAMessageFromContent, proto } = require('@whiskeysockets/baileys');
-  
-  const formattedButtons = (buttons || [
-    { display_text: 'Doorstep Repair 🛠️', id: 'option_repair' },
-    { display_text: 'Cable & Remotes 🔌', id: 'option_cables' },
-    { display_text: 'Naye Offers 🎁', id: 'option_offers' }
-  ]).map(b => ({
-    name: 'quick_reply',
-    buttonParamsJson: JSON.stringify({ display_text: b.display_text, id: b.id })
-  }));
-
-  const interactiveMsg = generateWAMessageFromContent(jid, {
-    viewOnceMessage: {
-      message: {
-        interactiveMessage: proto.Message.InteractiveMessage.create({
-          body: proto.Message.InteractiveMessage.Body.create({ text: bodyText }),
-          footer: proto.Message.InteractiveMessage.Footer.create({ text: footerText || BIZ_NAME }),
-          nativeFlowMessage: proto.Message.InteractiveMessage.NativeFlowMessage.create({
-            buttons: formattedButtons
-          })
-        })
-      }
-    }
-  }, { userJid: jid });
-
-  await sock.relayMessage(jid, interactiveMsg.message, { messageId: interactiveMsg.key.id });
+  await sock.relayMessage(jid, msg.message, { messageId: msg.key.id });
 }
 
 /**
