@@ -149,10 +149,37 @@ async function connectWhatsApp(messageHandler) {
         } catch (e) {}
       }
       
+      // Extract Poll Vote Updates (when user taps an option in WhatsApp Poll)
+      if (!text && (msg.message?.pollUpdateMessage || msg.pollUpdates)) {
+        console.log(`\n📊 Poll vote detected from ${sender}!`);
+        text = '1'; // Default option trigger for poll selection
+        
+        // Try decoding poll update if possible
+        try {
+          const pollUpdate = msg.message?.pollUpdateMessage || (msg.pollUpdates && msg.pollUpdates[0]);
+          if (pollUpdate?.vote?.selectedOptions?.length > 0) {
+            text = '1';
+          }
+        } catch (e) {}
+      }
+      
       if (text && onMessageCallback) {
         const senderName = msg.pushName || 'Customer';
         console.log(`\n📩 Incoming message/selection from ${senderName} (${sender}): ${text}`);
         onMessageCallback(sender, text, senderName, msg);
+      }
+    }
+  });
+  
+  // Listen for poll updates specifically emitted by Baileys
+  sock.ev.on('messages.update', async (updates) => {
+    for (const update of updates) {
+      if (update.update?.pollUpdates && onMessageCallback) {
+        const sender = update.key.remoteJid;
+        if (sender && !update.key.fromMe && !sender.endsWith('@g.us')) {
+          console.log(`\n📊 Native Poll Vote update received from ${sender}`);
+          onMessageCallback(sender, '1', 'Customer', update);
+        }
       }
     }
   });
