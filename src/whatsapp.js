@@ -206,22 +206,31 @@ const BIZ_NAME = process.env.BUSINESS_NAME || 'Diwan Electronics';
 async function sendNativePoll(jid, bodyText) {
   const cleanBody = bodyText.replace(/Reply 1, 2 ya 3 karo[\s\S]*/gi, '').trim();
   
-  // Send the personalized text greeting first
-  await sock.sendMessage(jid, { text: cleanBody });
-  await delay(1000);
-  
-  // Send the native interactive WhatsApp Poll menu right below it!
-  await sock.sendMessage(jid, {
-    poll: {
-      name: 'Aapko kis service ki jankari chahiye? (Tap an option below 👇)',
-      values: [
-        '1️⃣ Doorstep Repair / Service 🛠️',
-        '2️⃣ Remotes & Cables Delivery 🔌',
-        '3️⃣ Naye Offers & Help 🎁'
-      ],
-      selectableCount: 1
-    }
-  });
+  // Check if target is self (messaging your own logged-in number)
+  const selfNumber = sock?.user?.id ? sock.user.id.split(':')[0].split('@')[0] : '';
+  const targetNumber = jid.replace(/\D/g, '');
+  const isSelf = selfNumber && targetNumber.includes(selfNumber);
+
+  if (isSelf) {
+    // Self-chat: send formatted text menu (WhatsApp blocks self-sent native poll key exchanges)
+    const fullText = cleanBody + `\n\nReply 1, 2 ya 3 karo:\n1️⃣ Doorstep Repair / Service 🛠️\n2️⃣ Remotes & Cables Delivery 🔌\n3️⃣ Naye Offers & Help 🎁`;
+    await sock.sendMessage(jid, { text: fullText });
+  } else {
+    // Sending to another customer: send personalized text + Native Interactive WhatsApp Poll!
+    await sock.sendMessage(jid, { text: cleanBody });
+    await delay(1000);
+    await sock.sendMessage(jid, {
+      poll: {
+        name: 'Aapko kis service ki jankari chahiye? (Tap an option below 👇)',
+        values: [
+          '1️⃣ Doorstep Repair / Service 🛠️',
+          '2️⃣ Remotes & Cables Delivery 🔌',
+          '3️⃣ Naye Offers & Help 🎁'
+        ],
+        selectableCount: 1
+      }
+    });
+  }
 }
 
 /**
