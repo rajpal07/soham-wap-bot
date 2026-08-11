@@ -202,7 +202,7 @@ async function sendMessage(jid, content) {
   
   try {
     const textStr = typeof content === 'string' ? content : (content.text || '');
-    const menuMode = process.env.MENU_MODE || 'poll';
+    const menuMode = process.env.MENU_MODE || 'text';
     
     // Simulate typing (makes it look natural)
     await sock.presenceSubscribe(jid);
@@ -212,7 +212,7 @@ async function sendMessage(jid, content) {
     const typingDuration = Math.min(Math.max(textStr.length * 50, 1500), 4000);
     await delay(typingDuration);
     
-    if (menuMode === 'poll' || menuMode === 'interactive_poll') {
+    if (menuMode === 'poll') {
       console.log('📊 Sending Native WhatsApp Interactive Poll Menu...');
       await sendNativePoll(jid, textStr);
     } else if (menuMode === 'list') {
@@ -222,6 +222,7 @@ async function sendMessage(jid, content) {
       console.log('🔘 Sending Quick Reply Buttons Message...');
       await sendNativeButtons(jid, textStr);
     } else {
+      // Standard Text Delivery (100% reliable, zero E2EE waiting time)
       await sock.sendMessage(jid, { text: textStr });
     }
     
