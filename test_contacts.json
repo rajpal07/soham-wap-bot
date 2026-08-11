@@ -1,16 +1,44 @@
 [
   {
-    "name": "Test User 1",
-    "phone": "9876543210",
+    "name": "Aditiya Rajpal",
+    "phone": "9653642227",
     "purchases": [
       {
-        "date": "15/07/2026",
-        "productName": "LED TV",
-        "amount": 15000,
+        "date": "10/06/2026",
+        "productName": "Haier Double Door Fridge",
+        "amount": 28500,
         "balance": 0
       }
     ],
-    "totalSpent": 15000,
+    "totalSpent": 28500,
+    "totalBalance": 0
+  },
+  {
+    "name": "Vedanth Oberoi",
+    "phone": "9372893811",
+    "purchases": [
+      {
+        "date": "20/05/2026",
+        "productName": "MIDEA AC",
+        "amount": 32000,
+        "balance": 0
+      }
+    ],
+    "totalSpent": 32000,
+    "totalBalance": 0
+  },
+  {
+    "name": "Soham Rajpal",
+    "phone": "9137515363",
+    "purchases": [
+      {
+        "date": "05/07/2026",
+        "productName": "Voltas Beko Washing Machine",
+        "amount": 19500,
+        "balance": 0
+      }
+    ],
+    "totalSpent": 19500,
     "totalBalance": 0
   }
 ]
